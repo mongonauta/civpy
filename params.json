@@ -1,0 +1,39 @@
+{
+  "resources"            : ["altitude", 
+                            "relief", 
+                            "land", 
+                            "rainfall", 
+                            "temperature", 
+                            "water", 
+                            "forest", 
+                            "swamp", 
+                            "grass", 
+                            "human", 
+                            "wood"],
+  
+  "waterLevel"           : 0.5,
+
+  "influenceMatrix"      : {"human" : {"human"  :-0.02,
+                                       "forest" :-0.01,
+                                       "swamp"  : 0.00,
+                                       "grass"  : 0.02,
+                                       "water"  :-9999}
+                           },
+
+  "buildingSet"          : { "( 1, 1)" : "townhall",
+                             "( 1, 2)" : "woodmill" },
+
+  "buildingDef"          : { "townhall" : {},
+                             "woodmill" : {"wood"   :  2,
+                                           "human"  : -2,
+                                           "forest" : -2} 
+                           },
+
+  "humanSpreadThreshold" : 10,
+
+  "vsize"                : 32,
+
+  "hsize"                : 32,
+
+  "seedPopulation"       : 10
+}

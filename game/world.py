@@ -120,7 +120,8 @@ class world:
     return result
     
 
-        
+   
+  # returns a 2d matrix filled with zeros     
   def zeroMap( self ):  
     result = {}
 
@@ -130,7 +131,28 @@ class world:
 
     return result
     
+  
+  
+  # returns a 2d matrix containing 1s or 0s that determine if we should bother calculating on a specific tile
+  # 1: perform calculations on this tile
+  # 0: don't perform calculations
+  #
+  # right now, whenever we're near an inhabited tile -> 1, else 0
+  def determineCalculability( self, v, h ):
+    result = False
     
+    for vv in range(max(0, v-1), min(self.vsize, v+1)):
+      if result == True:          
+        break
+          
+      for hh in range(max(0, h-1), min(self.hsize, h+1)):          
+        if self.resourceMap['human'][vv][hh] > 0:
+          result = True
+          break
+                 
+    return result
+
+
 
   # create a 2d map of size vsize x hsize containing a dict of items in each location.
   # each resource is set to its default
@@ -197,9 +219,14 @@ class world:
     # calculate growth per tile
     for v in range(self.vsize):
       for h in range(self.hsize):
-
+   
+        # determine 'calculability' (i.e. indicates if we should bother calculating on this tile)
+        # TODO: make this work!!!!
+        calculability = True #self.determineCalculability(v, h)
+        
         # only do something if people are present on the tile (or if tile is near populated tile)
-        if resourceMap['habitable'][v][h] > 0:
+        #if resourceMap['calculable'][v][h] > 0:
+        if calculability == True:
         
           # list of resources affected by building
           s1 = {k:0 for k in self.resources}
@@ -250,7 +277,6 @@ class world:
     # add delta to resource map
     self.resourceMap = newMap
 
-  
 
   # calculate growth rate of a set of different resources (compounded over an area)
   def calcGrowthrate( self, s ):

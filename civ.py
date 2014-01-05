@@ -1,5 +1,6 @@
 import pyglet
 import random
+import json
 from game import world
 from game import graphics
 
@@ -16,44 +17,12 @@ t = 0
 # load world from file
 def loadWorld():
 
-  global w
-  
-  #resources = {'forest':0, 'swamp':0, 'grass':0, 'human':0, 'wood':0}
-  resources = ['altitude', 'relief', 'land', 'rainfall', 'temperature', 'water', 'forest', 'swamp', 'grass', 'human', 'wood']
+  f = open('params.json','r')
+  dataRaw = f.read()
+  f.close()
+  d = json.loads(dataRaw)
 
-  waterLevel = 0.5
-  
-  influenceMatrix = {'human':{'human' :-0.02,
-                              'forest':-0.01,
-                              'swamp' :+0.00,
-                              'grass' :+0.02,
-                              'water' :-9999}}
-
-  buildingSet = { ( 1, 1):'townhall',
-                  ( 1, 2):'woodmill' }                          
-
-  buildingDef = { 'townhall':{},
-                  'woodmill':{'wood':+2,
-                             'human':-2,
-                             'forest':-2} }
-  
-  humanSpreadThreshold = 10
-            
-  vsize = 128
-  hsize = 128
-  
-  seedPopulation = 10
-  
-  d = {'resources'            : resources,
-       'waterLevel'           : waterLevel,
-       'influenceMatrix'      : influenceMatrix,
-       'buildingSet'          : buildingSet,
-       'buildingDef'          : buildingDef,
-       'humanSpreadThreshold' : humanSpreadThreshold,
-       'vsize'                : vsize,
-       'hsize'                : hsize,
-       'seedPopulation'       : seedPopulation}
-               
+  global w 
   w = world.world(d)
   
   
@@ -84,6 +53,7 @@ def update(dt):
   # fill batch with images
   
   # TODO: figure out how not to keep adding sprites to the tile list!!!!
+  # solution: use multiple batches, one for each resource??
   tiles = graphics.fillBatch(w, imageList, main_batch, tiles)
   print len(tiles)
   

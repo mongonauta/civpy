@@ -1,6 +1,8 @@
 import pyglet
 import random
 
+# TODO: change this so that multiple batches are updated (if necessary). each batch corresponding to a resource.
+# see http://www.pyglet.org/doc/programming_guide/displaying_images.html (halfway down page)
 def fillBatch(world, imageList, batch, oldListOfSprites):
 
   background = pyglet.graphics.OrderedGroup(0)
