@@ -20,6 +20,9 @@ class world:
     
   def __init__( self, d ): # resources, influenceMatrix, buildingDef, buildingSet, humanSpreadThreshold, vsize, hsize 
 
+    # age of world
+    self.age = 0
+    
     # a list with resource names
     self.resources = d['resources']
 
@@ -51,8 +54,7 @@ class world:
     # changeMap[v][h] = 1 if tile has changed since last update, 0 if not
     # for obvious reasons, set changeMap to 1 on first go
     self.changeMap = [[1]*self.hsize for i in range(self.vsize)]
-   
-   
+    
 
   # returns a land map. depending on altitude, landMap is either land or water
   def generateLandMap(self, altitudeMap):
@@ -213,6 +215,9 @@ class world:
   # update state of world given by amount of time passed
   def update( self, dt ):
 
+    # increase age
+    self.age += dt
+    
     # map that records delta (=change) in resources
     newMap = self.zeroMap()
 
@@ -343,6 +348,9 @@ class world:
 
     return self.resources, self.influenceMatrix, self.resourceMap, self.humanSpreadThreshold
 
+
+
+  # returns cumulative quantity of a certain resource
   def cumulative( self, key ):
    
     c = 0
@@ -352,6 +360,18 @@ class world:
         c = c + self.resourceMap[key][v][h]
         
     return c
+
+
+  # returns number of cells that are "subject to change"
+  def totalChange( self ):
+  
+    c = 0
+    
+    for v in range(self.vsize):
+      for h in range(self.hsize):
+        c = c + self.changeMap[v][h]
+        
+    return c   
 
 
 
