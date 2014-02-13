@@ -16,7 +16,7 @@
   "influenceMatrix"      : {"human" : {"human"  :-0.02,
                                        "forest" :-0.01,
                                        "swamp"  : 0.00,
-                                       "grass"  : 0.02,
+                                       "grass"  : 0.03,
                                        "water"  :-9999}
                            },
 
