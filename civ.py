@@ -7,7 +7,6 @@ import json
 from game import world, graphics
 
 
-
 class HeadUpDisplay(cocos.layer.Layer):
 
   def __init__(self):
@@ -18,7 +17,8 @@ class HeadUpDisplay(cocos.layer.Layer):
     self.label3 = cocos.text.Label('HUD text 3', anchor_x='left', anchor_y='bottom')
     self.label4 = cocos.text.Label('HUD text 4', anchor_x='left', anchor_y='bottom')
     self.label5 = cocos.text.Label('HUD text 5', anchor_x='left', anchor_y='bottom')
-    self.label6 = cocos.text.Label('HUD text 5', anchor_x='left', anchor_y='bottom')
+    self.label6 = cocos.text.Label('HUD text 6', anchor_x='left', anchor_y='bottom')
+    self.label7 = cocos.text.Label('HUD text 7', anchor_x='left', anchor_y='bottom')
                  
     self.label1.position = 0,0
     self.label2.position = 0,16
@@ -26,6 +26,7 @@ class HeadUpDisplay(cocos.layer.Layer):
     self.label4.position = 0,48
     self.label5.position = 0,64
     self.label6.position = 0,80
+    self.label7.position = 0,96
         
     self.add(self.label1)
     self.add(self.label2)
@@ -33,62 +34,12 @@ class HeadUpDisplay(cocos.layer.Layer):
     self.add(self.label4)
     self.add(self.label5)
     self.add(self.label6)
+    self.add(self.label7)
              
   #def changeHud(self, label1text, label2text, label3text):
   #  self.label1.element.text = label1text
   #  self.label2.element.text = label2text
   #  self.label3.element.text = label3text
-             
-     
-class MouseDisplay(cocos.layer.Layer):
-
-    is_event_handler = True     #: enable director.window events
-
-    def __init__(self):
-        super( MouseDisplay, self ).__init__()
-
-        self.posx = 0
-        self.posy = 0
-        self.text = cocos.text.Label('No mouse events yet', font_size=18, x=self.posx, y=self.posy, anchor_x='left', anchor_y='bottom' )
-        self.add( self.text )
-
-    def update_text (self, x, y):
-        text = 'Mouse @ %d,%d' % (x, y)
-        self.text.element.text = text
-        self.text.element.x = self.posx
-        self.text.element.y = self.posy
-
-    def on_mouse_motion (self, x, y, dx, dy):
-        """Called when the mouse moves over the app window with no button pressed
-
-        (x, y) are the physical coordinates of the mouse
-        (dx, dy) is the distance vector covered by the mouse pointer since the
-          last call.
-        """
-        self.update_text (x, y)
-
-    def on_mouse_drag (self, x, y, dx, dy, buttons, modifiers):
-        """Called when the mouse moves over the app window with some button(s) pressed
-
-        (x, y) are the physical coordinates of the mouse
-        (dx, dy) is the distance vector covered by the mouse pointer since the
-          last call.
-        'buttons' is a bitwise or of pyglet.window.mouse constants LEFT, MIDDLE, RIGHT
-        'modifiers' is a bitwise or of pyglet.window.key modifier constants
-           (values like 'SHIFT', 'OPTION', 'ALT')
-        """
-        self.update_text (x, y)
-
-    def on_mouse_press (self, x, y, buttons, modifiers):
-        """This function is called when any mouse button is pressed
-
-        (x, y) are the physical coordinates of the mouse
-        'buttons' is a bitwise or of pyglet.window.mouse constants LEFT, MIDDLE, RIGHT
-        'modifiers' is a bitwise or of pyglet.window.key modifier constants
-           (values like 'SHIFT', 'OPTION', 'ALT')
-        """
-        self.posx, self.posy = director.get_virtual_coordinates (x, y)
-        self.update_text (x,y)        
         
                 
 # load world from file
@@ -104,7 +55,10 @@ def loadWorld():
            
 
 def main():
-  global keyboard, mouse, scroller, world, graphics
+  global keyboard, mouse, scroller, world, graphics, i, j
+  
+  i = 0
+  j = 0
   
   from cocos.director import director
   director.init(width=512, height=512, do_not_scale=True, resizable=True)
@@ -127,6 +81,8 @@ def main():
     
   def on_mouse_motion(x, y, dx, dy):
   
+    global i, j
+    
     # set focus
     graphics.scroller.set_focus(x, y)
     
@@ -139,24 +95,29 @@ def main():
     
     # change HUD to display attributes of cell
     if cell:
-     j = cell.position[1]/16
+
      i = cell.position[0]/16
+     j = cell.position[1]/16
+     
      altitude = world.resourceMap['altitude'][i][j]
      forest = world.resourceMap['forest'][i][j]
      human = world.resourceMap['human'][i][j]
-       
+     building = world.buildingAtCell(j, i)
+     
      hud_layer.label1.element.text = 'altitude: ' + str(world.resourceMap['altitude'][i][j])
      hud_layer.label2.element.text = 'forest: ' + str(world.resourceMap['forest'][i][j])
      hud_layer.label3.element.text = 'human: ' + str(world.resourceMap['human'][i][j])
      hud_layer.label4.element.text = 'land: ' + str(world.resourceMap['land'][i][j])
      hud_layer.label5.element.text = 'temperature: ' + str(world.resourceMap['temperature'][i][j])
      hud_layer.label6.element.text = 'coordinates (x,y) / (j,i): (' + str(mx) + ',' + str(my) + ') / (' + str(j) + ',' + str(i) + ')'
+     hud_layer.label7.element.text = 'building: ' + str(building)
      
      
      #hud_layer.changeHud(altitude, forest, human)
      
       
   def on_key_press(key, modifier):
+    
     if key == pyglet.window.key.ENTER:
       world.update(1)      
       graphics.fillCellMatrices(world)
@@ -169,6 +130,16 @@ def main():
       else:
         graphics.scroller.do(actions.ScaleTo(.50, 0))
           
+    elif key == pyglet.window.key.H:
+      main_scene.child('HUD')
+      
+    elif key == pyglet.window.key.SPACE:
+      result = world.buildBuilding(j, i, 'townhall')
+      if result == True:
+        print 'yay' 
+      else:
+        print 'cant build townhall'
+      
   director.window.push_handlers(on_key_press)
   director.window.push_handlers(on_mouse_motion)    
 

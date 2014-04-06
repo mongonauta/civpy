@@ -374,7 +374,32 @@ class world:
     return c   
 
 
+  # builds a building of certain type on location x, y
+  def buildBuilding(self, j, i, buildingType):
+    
+    success = False
+    
+    if not((j, i) in self.buildingSet):
+      # nothing should be built on location (x, y) yet
+      self.buildingSet[(j, i)] = buildingType
+      success = True
+      
+    return success 
+  
+  
+  
+  def buildingAtCell(self, j, i):
+  
+    result = None
 
+    if (j, i) in self.buildingSet:
+      
+      result = self.buildingSet[(j, i)]
+      
+    return result
+    
+    
+    
 # only run this if world.py is called directly from command line
 if __name__ == "__main__":
 
