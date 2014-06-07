@@ -1,47 +1,16 @@
 import pyglet
-from pyglet.window import key, mouse
 import cocos
-from cocos import tiles, actions, layer
 import random
 import json
+import time
+from pyglet.window import key, mouse
+from cocos import tiles, actions, layer
 from game import world, graphics
 
 
-class HeadUpDisplay(cocos.layer.Layer):
 
-  def __init__(self):
-    super( HeadUpDisplay, self ).__init__()
-    
-    self.label1 = cocos.text.Label('HUD text 1', anchor_x='left', anchor_y='bottom')
-    self.label2 = cocos.text.Label('HUD text 2', anchor_x='left', anchor_y='bottom')
-    self.label3 = cocos.text.Label('HUD text 3', anchor_x='left', anchor_y='bottom')
-    self.label4 = cocos.text.Label('HUD text 4', anchor_x='left', anchor_y='bottom')
-    self.label5 = cocos.text.Label('HUD text 5', anchor_x='left', anchor_y='bottom')
-    self.label6 = cocos.text.Label('HUD text 6', anchor_x='left', anchor_y='bottom')
-    self.label7 = cocos.text.Label('HUD text 7', anchor_x='left', anchor_y='bottom')
-                 
-    self.label1.position = 0,0
-    self.label2.position = 0,16
-    self.label3.position = 0,32
-    self.label4.position = 0,48
-    self.label5.position = 0,64
-    self.label6.position = 0,80
-    self.label7.position = 0,96
-        
-    self.add(self.label1)
-    self.add(self.label2)
-    self.add(self.label3)
-    self.add(self.label4)
-    self.add(self.label5)
-    self.add(self.label6)
-    self.add(self.label7)
-             
-  #def changeHud(self, label1text, label2text, label3text):
-  #  self.label1.element.text = label1text
-  #  self.label2.element.text = label2text
-  #  self.label3.element.text = label3text
-        
-                
+
+
 # load world from file
 def loadWorld():
 
@@ -50,103 +19,152 @@ def loadWorld():
   f.close()
   d = json.loads(dataRaw)
 
-  #global w 
-  return world.world(d)
-           
+  #global w
+  return world.World(d)
+
 
 def main():
-  global keyboard, mouse, scroller, world, graphics, i, j
-  
+  global keyboard, mouse, scroller, world, g
+  global i, j, fx, fy, winx, winy, scrollablex, scrollabley
+
+  # coordinates of current cell
   i = 0
   j = 0
-  
+
+  winx = 800
+  winy = 600
+
+  # sprite size
+  spritex = 16
+  spritey = 16
+
   from cocos.director import director
-  director.init(width=512, height=512, do_not_scale=True, resizable=True)
+  director.init(width=winx, height=winy, do_not_scale=True, resizable=False)
 
   # load world
   world = loadWorld()
 
+  # map size (pixels)
+  canvasx = world.hsize * spritex
+  canvasy = world.vsize * spritey
+
+  # amount of pixels we can scroll around
+  scrollablex = max(0, canvasx - winx)
+  scrollabley = max(0, canvasy - winy)
+
   # create graphics object
-  layers = ['land','forest','human']#,'grass','swamp']
-  graphics = graphics.graphics(layers, world)
- 
-  hud_layer = HeadUpDisplay()
-  
-  main_scene = cocos.scene.Scene(graphics.scroller)
+  layers = ['land','forest','human']
+  g = graphics.Graphics(layers, world)
+
+  hud_layer = graphics.HeadUpDisplay(16, 0, 0, 10)
+
+  main_scene = cocos.scene.Scene(g.scroller)
   main_scene.add(hud_layer, 999, 'HUD')
 
   keyboard = key.KeyStateHandler()
-  
+
   director.window.push_handlers(keyboard)
-    
+
   def on_mouse_motion(x, y, dx, dy):
-  
-    global i, j
-    
-    # set focus
-    graphics.scroller.set_focus(x, y)
-    
-    # determine pixel coordinates of cursor
-    mx, my = graphics.scroller.pixel_from_screen(x, y)
-    
-    # determine which cell cursor is at
-    layer = graphics.scroller.get('land')
+
+    global i, j, winx, winy, scrollablex, scrollabley
+
+    x_focus = (1.0*x)/winx * scrollablex + winx/2
+    y_focus = (1.0*y)/winy * scrollabley + winy/2
+
+    g.scroller.set_focus(x_focus, y_focus)
+
+    # determine where cursor is on the map
+    mx, my = g.scroller.pixel_from_screen(x, y)
+
+    # given pixel coordinates, determine which cell cursor is at
+    layer = g.scroller.get('land')
     cell = layer.get_at_pixel(mx, my)
-    
+
     # change HUD to display attributes of cell
     if cell:
+      i = cell.position[0]/16
+      j = cell.position[1]/16
 
-     i = cell.position[0]/16
-     j = cell.position[1]/16
-     
-     altitude = world.resourceMap['altitude'][i][j]
-     forest = world.resourceMap['forest'][i][j]
-     human = world.resourceMap['human'][i][j]
-     building = world.buildingAtCell(j, i)
-     
-     hud_layer.label1.element.text = 'altitude: ' + str(world.resourceMap['altitude'][i][j])
-     hud_layer.label2.element.text = 'forest: ' + str(world.resourceMap['forest'][i][j])
-     hud_layer.label3.element.text = 'human: ' + str(world.resourceMap['human'][i][j])
-     hud_layer.label4.element.text = 'land: ' + str(world.resourceMap['land'][i][j])
-     hud_layer.label5.element.text = 'temperature: ' + str(world.resourceMap['temperature'][i][j])
-     hud_layer.label6.element.text = 'coordinates (x,y) / (j,i): (' + str(mx) + ',' + str(my) + ') / (' + str(j) + ',' + str(i) + ')'
-     hud_layer.label7.element.text = 'building: ' + str(building)
-     
-     
-     #hud_layer.changeHud(altitude, forest, human)
-     
-      
+      altitude = world.resourceMap['altitude'][i][j]
+      forest = world.resourceMap['forest'][i][j]
+      human = world.resourceMap['human'][i][j]
+      building = world.buildingAtCell(j, i)
+
+      hud_layer.label[0].element.text = 'coordinates (x, y) / (fx,fy) / (mx,my) / (j,i): (' + str(x) + ',' + str(y) + ') / (' + str(x_focus) + ',' + str(y_focus) + ') / (' + str(mx) + ',' + str(my) + ') / (' + str(j) + ',' + str(i) + ')'
+      hud_layer.label[1].element.text = 'altitude   : ' + str(world.resourceMap['altitude'][i][j])
+      hud_layer.label[2].element.text = 'land       : ' + str(world.resourceMap['land'][i][j])
+      hud_layer.label[3].element.text = 'forest     : ' + str(world.resourceMap['forest'][i][j])
+      hud_layer.label[4].element.text = 'grass      : ' + str(world.resourceMap['grass'][i][j])
+      hud_layer.label[5].element.text = 'wilderness : ' + str(world.resourceMap['wilderness'][i][j])
+      hud_layer.label[6].element.text = 'human      : ' + str(world.resourceMap['human'][i][j])
+      hud_layer.label[7].element.text = 'hum.srrndng: ' + str(world.calcOneSurrounding(j,i,'human',1))
+      hud_layer.label[9].element.text = 'building   : ' + str(building)
+
+
+      #hud_layer.changeHud(altitude, forest, human)
+
+
   def on_key_press(key, modifier):
-    
+
+    global fx, fy, offsetx, offsety
+
     if key == pyglet.window.key.ENTER:
-      world.update(1)      
-      graphics.fillCellMatrices(world)
-      graphics.updateLayers()
-      print('time: {0}, pop: {1}, forest: {2}, change: {3}').format(world.age, int(world.cumulative('human')), int(world.cumulative('forest')), int(world.totalChange()))
-      
+      # next turn
+
+      print('time: {0}, pop: {1}, forest: {2}, wilderness: {3}, change: {4}').format(world.age,
+                                                                              int(world.cumulative('human')),
+                                                                              int(world.cumulative('forest')),
+                                                                              int(world.cumulative('wilderness')),
+                                                                              int(world.totalChange()))
+
+      t = time.time()
+      world.update(1)
+      print 'world update: ', time.time() - t
+
+      t = time.time()
+      g.fillCellMatrices(world)
+      print 'fill cells: ', time.time() - t
+
+      t = time.time()
+      g.updateLayers()
+      print 'update layers: ', time.time() - t
+
     elif key == pyglet.window.key.Z:
-      if graphics.scroller.scale == .50:
-        graphics.scroller.do(actions.ScaleTo(1, 0))
+      # zoom
+
+      if g.scroller.scale == .50:
+        g.scroller.do(actions.ScaleTo(1, 0))
       else:
-        graphics.scroller.do(actions.ScaleTo(.50, 0))
-          
+        g.scroller.do(actions.ScaleTo(.50, 0))
+
+    elif key == pyglet.window.key.R:
+      # reset world
+      pass
+
     elif key == pyglet.window.key.H:
-      main_scene.child('HUD')
-      
+      # toggle HUD on/off
+
+      layer = main_scene.get('HUD')
+      if layer.visible == False:
+        layer.visible = True
+      else:
+        layer.visible = False
+
     elif key == pyglet.window.key.SPACE:
       result = world.buildBuilding(j, i, 'townhall')
       if result == True:
-        print 'yay' 
+        print 'yay'
       else:
         print 'cant build townhall'
-      
+
+
   director.window.push_handlers(on_key_press)
-  director.window.push_handlers(on_mouse_motion)    
+  director.window.push_handlers(on_mouse_motion)
 
   director.run(main_scene)
-    
+
 
 # run game
 if __name__ == '__main__':
   main()
-
