@@ -9,6 +9,7 @@
 import altitude
 import random
 import time
+import numpy as np
 
 class World:
 
@@ -28,6 +29,18 @@ class World:
 
     # a list with resource names
     self.resources = d['resources']
+
+    self.altitude = index(self.resources['altitude']])
+    self.relief = index(self.resources['relief']])
+    self.land = index(self.resources['land']])
+    self.water = index(self.resources['water']])
+    self.rainfall = index(self.resources['rainfall']])
+    self.temperature = index(self.resources['temperature']])
+    self.forest = index(self.resources['forest']])
+    self.grass = index(self.resources['grass']])
+    self.human = index(self.resources['human']])
+    self.wilderness = index(self.resources['wilderness']])
+    self.altitude = index(self.resources['']])
 
     self.waterLevel = d['waterLevel']
 
@@ -61,15 +74,15 @@ class World:
     # set of buildings
     self.buildingSet = {}
 
-    # initial set of updateable tiles is empty
-    self.listOfUpdateableTiles = []
+    # create map with all bells & whistles
+    self.createMap()
 
-    # create empty map
-    self.resourceMap = self.zeroMap()
+    # changeMap[v][h] = 1 if tile has changed since last update, 0 if not
+    # for obvious reasons, set changeMap to 1 on first go
+    self.changeMap = np.ndarray(shape=(self.hsize, self.vsize), dtype=np.uint16)
 
-    # fill map with all bells & whistles
-    self.fillMap()
-
+    # initial set of updateable tiles is empty, to be filled with changemap
+    self.listOfUpdateableTiles = [(v, h) for v in range(self.vsize) for h in range(self.hsize)]
 
 
   # returns a land map. depending on altitude, landMap is either land or water
@@ -124,134 +137,123 @@ class World:
 
 
 
-  # returns a map with grass values, according to the algorithm specified
-  def generateForestMap(self, altitudeMap, rainfallMap, temperatureMap):
+  # returns a map with forest values, according to the algorithm specified
+  def generateForestMap(self):
     result = []
     for v in range(self.vsize):
       result.append([])
       for h in range(self.hsize):
         value = 0
-        if altitudeMap[v][h] > 0.7:
-          value = temperatureMap[v][h] * rainfallMap[v][h]
+        if self.resourceMap[self.altitude][v][h] > 0.7:
+          value = self.resourceMap[self.temperature][v][h] * self.resourceMap[self.rainfall][v][h]
         result[v].append(value)
 
     return result
 
-  def generateWildernessMap(self, humanMap):
+  def generateWildernessMap(self):
     result = []
     for v in range(self.vsize):
       result.append([])
       for h in range(self.hsize):
         value = 1
-        if humanMap[v][h] > 0:
+        if self.resourceMap[self.human][v][h] > 0:
           value = 0
 
         result[v].append(value)
 
     return result
 
-  def placeSeedPopulation(self):
+  # returns a 3d matrix filled with zeros
+  def zeroMap( self ):
+    return 0 * np.ndarray(shape=(len(self.resources), self.vsize, self.hsize), dtype=np.uint16)
 
-    result = []
+  # create a 2d map of size vsize x hsize containing a dict of items in each location.
+  # each resource is set to its default
+  def createMap( self ):
+
+    # initial map only contains zeros
+    self.resourceMap = 0 * np.ndarray(shape=(len(self.resources), self.vsize, self.hsize), dtype=np.uint16)
+
+    # generate a vsize x hsize altitude map and relief map
+    self.resourceMap[self.altitude], self.resourceMap[self.relief] = altitude.generateAltitudeMap(self.vsize, self.hsize)
+
+    # determine where to put land, where to put sea
+    self.resourceMap[self.land] = self.generateLandMap()
+
+    # determine where to put land, where to put sea
+    self.resourceMap[self.water] = self.generateWaterMap()
+
+    # calculate temperature
+    self.resourceMap[self.temperature] = self.generateTemperatureMap()
+
+    # calculate rainfall
+    self.resourceMap[self.rainfall] = self.generateRainfallMap()
+
+    # calculate forest
+    self.resourceMap[self.forest] = self.generateForestMap()
+
+    # calculate grass
+    self.resourceMap[self.grass] = self.generateGrassMap()
 
     #calculate where to seed human population
     v = int(self.vsize/2)
     h = int(self.hsize/2)
 
-    n = 0
-    while self.resourceMap['land'][v][h] == 0 and n < 1000:
+    while self.resourceMap[self.land][v][h] == 0:
       v = min(self.vsize-1, max(0, v + random.randrange(-1,2)))
       h = min(self.hsize-1, max(0, h + random.randrange(-1,2)))
-      n += 1
 
-    result.append((v,h))
-
-    return result
-
-  # returns a 3d matrix filled with zeros
-  def zeroMap( self ):
-    result = {}
-
-    # then, generate empty maps for resources/states
-    for k in self.resources:
-      result[k] = [[0]*self.hsize for i in range(self.vsize)]
-
-    return result
-
-
-  # create a 2d map of size vsize x hsize containing a dict of items in each location.
-  # each resource is set to its default
-  def fillMap( self ):
-
-    # generate a vsize x hsize altitude map and relief map
-    self.resourceMap['altitude'], self.resourceMap['relief'], self.resourceMap['shadow'] = altitude.generateAltitudeMap(self.vsize, self.hsize, test=False)
-
-    # determine where to put land, where to put sea
-    self.resourceMap['land'] = self.generateLandMap(self.resourceMap['altitude'])
-
-    # determine where to put land, where to put sea
-    self.resourceMap['water'] = self.generateWaterMap(self.resourceMap['altitude'])
-
-    # calculate temperature
-    self.resourceMap['temperature'] = self.generateTemperatureMap(self.resourceMap['altitude'])
-
-    # calculate rainfall
-    self.resourceMap['rainfall'] = self.generateRainfallMap(self.resourceMap['altitude'])
-
-    # calculate forest
-    self.resourceMap['forest'] = self.generateForestMap(self.resourceMap['altitude'], self.resourceMap['rainfall'], self.resourceMap['temperature'])
-
-    # calculate grass
-    self.resourceMap['grass'] = self.generateGrassMap(self.resourceMap['rainfall'], self.resourceMap['forest'])
-
-    listOfSeedLocations = self.placeSeedPopulation()
-
-    for c in listOfSeedLocations:
-      self.resourceMap['human'][c[0]][c[1]] = self.seedPopulation
-
-    self.listOfUpdateableTiles = listOfSeedLocations
+    self.resourceMap[self.human][v][h] = self.seedPopulation
 
     # calculate wilderness (places where people aren't)
-    self.resourceMap['wilderness'] = self.generateWildernessMap(self.resourceMap['human'])
+    self.resourceMap[self.land] = self.generateWildernessMap()
+
+    return result
 
   # update state of world given by amount of time passed
   def update( self, dt ):
 
     newlistOfUpdateableTiles = []
 
-    extendedList = self.listOfUpdateableTiles
-
     # increase age
     self.age += dt
 
-    # create "extended" list which has all tiles that need to be calculated
-    # (listofupdateabletiles + immediate surroundings)
-    for c in self.listOfUpdateableTiles:
-      t = self.getListOfSurroundingCoordinates(c[0], c[1], 1)
-      extendedList = list(set(extendedList) | set(t))
+    # map that records delta (=change) in resources
+    newMap = self.zeroMap()
+    self.changeMap = [[0]*self.hsize for i in range(self.vsize)]
 
-    # calculate new tile values
-    for c in extendedList:
+    # for v in range(self.vsize):
+    #   for h in range(self.hsize):
+
+    # calculate surroundings (only where we expect change)
+    for c in self.listOfUpdateableTiles:
       v, h = c[0], c[1]
 
-      # determine surroundings
-      surroundings = self.calcAllSurroundings(v, h)
+      self.calcAllSurroundings(v, h)
 
-      # determine change in values of tile
+    # whiz bang matrix calculation of all resources at once!
+    # does not take into account humans on sea impossibility nor spawn threshold yet
+
+    # first, make 4d matrices so they can be easily manipulated
+    a = self.resourceMap[np.newaxis,:,:,:]
+    b = self.surroundingsMap[np.newaxis,:,:,:]
+
+    # then, flatten
+    newMap = sum(a * self.inplaceManipulation) + sum(b * self.surroundingsManipulation) 
+
+      # determine change in values of tile TODO: only do this for resources that actually change e.g. humans, grass
       for k in self.updateableResources:
-        newValue = self.updateTile(v, h, k, surroundings)
 
-        # determine if change has taken place, important for rendering map
-        if abs(newValue - self.resourceMap[k][v][h]) > 0.001:
+        newMap[k][v][h] = self.updateTile(v, h, k, surroundings)
 
-          self.resourceMap[k][v][h] = newValue
+       # determine if change has taken place, important for rendering map
+        if self.changeMap[v][h] == 0 and newMap[k][v][h] != self.resourceMap[k][v][h]:
+          self.changeMap[v][h] = 1
+          newlistOfUpdateableTiles = list(set(newlistOfUpdateableTiles) | set(self.getListOfSurroundingCoordinates(v, h, 1)))
 
-          if(v, h) not in newlistOfUpdateableTiles:
-            # add this tile to new listOfUpdateableTiles to be sure
-            newlistOfUpdateableTiles.append((v,h))
-
-
-    #print newlistOfUpdateableTiles
+    # add delta to resource map
+    for k in self.updateableResources:
+      self.resourceMap[k] = newMap[k]
 
     # renew tilestobeupdated list, adding/substracting tiles that were not
     self.listOfUpdateableTiles = newlistOfUpdateableTiles
@@ -266,7 +268,22 @@ class World:
     return result
 
   def getListOfSurroundingCoordinates( self, v, h, d):
-    return [(i, j) for i in range(v-d,v+d+1) for j in range(h-d,h+d+1) if abs(i-v) + abs(j-h) == d and i >= 0 and j >= 0 and i < self.vsize and j < self.hsize]
+    result = []
+
+    # add corner coordinates (always 4)
+    result.append( (v - d, h - d) )
+    result.append( (v - d, h + d) )
+    result.append( (v + d, h - d) )
+    result.append( (v + d, h + d) )
+
+    # add edge coordinates (4x d)
+    for i in range(-d + 1, d):
+      result.append( (v - d, h + i) )
+      result.append( (v + d, h + i) )
+      result.append( (v + i, h - d) )
+      result.append( (v + i, h + d) )
+
+    return result
 
   def calcOneSurrounding( self, v, h, k, r ):
     # sum resources surrounding tile (v, h) by running circles around (v, h)
@@ -304,7 +321,7 @@ class World:
           hh = c[1]
           distance = self.distance((v,h), (vv,hh))
 
-          if distance <= r:
+          if vv >= 0 and vv < self.vsize and hh >= 0 and hh < self.hsize and distance <= r:
             increaseDiameter = True
             distancePenalty = 1.0 * (r+1 - distance) / (r+1)
             result += self.resourceMap[k][vv][hh] * distancePenalty
@@ -314,7 +331,10 @@ class World:
 
   def updateTile( self, v, h, k, surroundings ):
     result = 0
-    # formula for population (should be formalized by a matrix of some sort)
+    # formula for population (TODO: should be formalized by a matrix of some sort)
+
+
+    # ooooooolllllldddddddd (spookyvoice)
     if  k == 'human':
       if surroundings['human'] >= self.humanSpreadThreshold:
         result = max(0,  0.25 * surroundings['grass']  # produces food
@@ -339,6 +359,8 @@ class World:
     # don't bother with the rest for now
     else:
       result = self.resourceMap[k][v][h]
+
+    # eeeeendddddd ooooffff oooooolllllllddddd
 
     return result
 
@@ -434,82 +456,4 @@ class World:
 # only run this if world.py is called directly from command line
 if __name__ == "__main__":
 
-  d = {
-    "resources"            : ["altitude",
-                              "relief",
-                              "land",
-                              "rainfall",
-                              "temperature",
-                              "water",
-                              "forest",
-                              "grass",
-                              "human",
-                              "wood",
-                              "wilderness",
-                              "shadow"],
-
-    "resourceInfluenceRange": {"altitude"   : 0,
-                              "relief"      : 0,
-                              "land"        : 0,
-                              "rainfall"    : 0,
-                              "temperature" : 0,
-                              "water"       : 1,
-                              "forest"      : 0,
-                              "grass"       : 1,
-                              "human"       : 1,
-                              "wood"        : 0,
-                              "wilderness"  : 1,
-                              "shadow"      : 0},
-
-    "resourceInfluenceMatrix": {"human": {"water" : 2.00,
-                                          "grass" : 0.25,
-                                          "forest":-1.00},
-
-                                "grass": {"openspace": 8.00,
-                                          "forest":   -1.00}},
-
-    "spreadThreshold"      : {"human": 5},
-
-    "resourceNotAllowedOn" : {"human": ["water"],
-                              "grass": ["water"]},
-
-    "updateableResources"  : ["human",
-                              "grass",
-                              "wilderness"],
-
-    "waterLevel"           : 0.5,
-
-    "buildingInfluence"    : {
-                               "townhall" : {
-                                              "human" : 1.5
-                                            }
-                             },
-
-    "productionFlow"       : {
-                               "forest" : "wood"
-                             },
-
-    "buildingCost"         : {
-                               "townhall" : {
-                                              "wood" : 10
-                                            }
-                             },
-
-    "buildingNotAllowed"   : {
-                               "townhall" : {
-                                              "water"  : [1  ,   1],
-                                              "relief" : [0.5,9999]
-                                            }
-                             },
-    "humanSpreadThreshold" : 5,
-    "vsize"                : 32,
-    "hsize"                : 32,
-    "seedPopulation"       : 10
-  }
-
-  w = World(d)
-
-  print w.getListOfSurroundingCoordinates(0,0,0)
-  #print w.getListOfSurroundingCoordinates(w.vsize,w.hsize,0)
-  print w.getListOfSurroundingCoordinates(0,0,1)
-  #print w.getListOfSurroundingCoordinates(w.vsize,w.hsize,1)
+  print 'Youre doing it wrong'

@@ -1,39 +1,77 @@
 {
-  "resources"            : ["altitude", 
-                            "relief", 
-                            "land", 
-                            "rainfall", 
-                            "temperature", 
-                            "water", 
-                            "forest", 
-                            "swamp", 
-                            "grass", 
-                            "human", 
-                            "wood"],
-  
+  "resources"            : ["altitude",
+                            "relief",
+                            "land",
+                            "rainfall",
+                            "temperature",
+                            "water",
+                            "forest",
+                            "grass",
+                            "human",
+                            "wood",
+                            "wilderness",
+                            "shadow"],
+
+  "resourceInfluenceRange": {"altitude"   : 0,
+                            "relief"      : 0,
+                            "land"        : 0,
+                            "rainfall"    : 0,
+                            "temperature" : 0,
+                            "water"       : 1,
+                            "forest"      : 0,
+                            "grass"       : 1,
+                            "human"       : 1,
+                            "wood"        : 0,
+                            "wilderness"  : 1,
+                            "shadow"      : 0},
+
+  "resourceInfluenceMatrix": {"human": {"water" : 2.00,
+                                        "grass" : 0.25,
+                                        "forest":-1.00},
+
+                              "grass": {"openspace": 8.00,
+                                        "forest":   -1.00}},
+
+  "spreadThreshold"      : {"human": 5},
+
+  "resourceNotAllowedOn" : {"human": ["water"],
+                            "grass": ["water"]},
+
+  "updateableResources"  : ["human",
+                            "grass",
+                            "wilderness"],
+
   "waterLevel"           : 0.5,
 
-  "influenceMatrix"      : {"human" : {"human"  :-0.02,
-                                       "forest" :-0.01,
-                                       "swamp"  : 0.00,
-                                       "grass"  : 0.02,
-                                       "water"  :-9999}
+  "buildingInfluence"    : {
+                             "townhall" : {
+                                            "human" : 1.5
+                                          }
                            },
 
-  "buildingSet"          : { "( 1, 1)" : "townhall",
-                             "( 1, 2)" : "woodmill" },
-
-  "buildingDef"          : { "townhall" : {},
-                             "woodmill" : {"wood"   :  2,
-                                           "human"  : -2,
-                                           "forest" : -2} 
+  "productionFlow"       : {
+                             "forest" : "wood"
                            },
 
-  "humanSpreadThreshold" : 10,
+  "buildingCost"         : {
+                             "townhall" : {
+                                            "wood" : 10
+                                          }
+                           },
 
-  "vsize"                : 32,
+  "buildingNotAllowed"   : {
+                             "townhall" : {
+                                            "water"  : [1  ,   1],
+                                            "relief" : [0.5,9999]
+                                          }
+                           },
 
-  "hsize"                : 32,
+
+  "humanSpreadThreshold" : 3,
+
+  "vsize"                : 64,
+
+  "hsize"                : 64,
 
   "seedPopulation"       : 10
 }
