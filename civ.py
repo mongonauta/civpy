@@ -57,15 +57,18 @@ def main():
   g = graphics.Graphics(layers, world)
 
   hud_layer = graphics.HeadUpDisplay(16, 0, 0, 10)
-  menu_layer = graphics.Menu()
+  menu_layer = graphics.MainMenu()
 
   main_scene = cocos.scene.Scene(g.scroller)
+
   main_scene.add(hud_layer, 998, 'HUD')
+
+  # menu seems to draw a lot of CPU, disable for now :(
   #main_scene.add(menu_layer, 999, 'menu')
 
   keyboard = key.KeyStateHandler()
 
-  director.window.push_handlers(keyboard)
+  #director.window.push_handlers(keyboard)
 
 
   def setFocus(x, y):

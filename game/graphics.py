@@ -22,17 +22,33 @@ class HeadUpDisplay(cocos.layer.Layer):
       # add label to layer
       self.add(self.label[k])
 
-class Menu(cocos.menu.Menu):
+class MainMenu(cocos.menu.Menu):
 
   def __init__(self):
-    super(Menu, self).__init__()
+    super(MainMenu, self).__init__()
 
-    l = []
-    l.append(cocos.menu.MenuItem('Options', self.do_something()))
-    self.create_menu(l)
+    self.menu_valign = pyglet.font.Text.TOP
+    self.menu_halign = pyglet.font.Text.LEFT
 
-  def do_something(self):
+
+    items = [
+      ( cocos.menu.MenuItem('Toggle debug', self.on_debug ) ),
+      ( cocos.menu.MenuItem('Toggle zoom', self.on_zoom ) ),
+      ( cocos.menu.MenuItem('Quit', self.on_quit ) )
+    ]
+
+    #self.create_menu(items, selected_effect   = cocos.menu.zoom_in(),
+    #                        unselected_effect = cocos.menu.zoom_out())
+    self.create_menu(items)
+
+  def on_debug(self):
     print 'options'
+
+  def on_zoom(self):
+    pass
+
+  def on_quit(self):
+    pass
 
 class Graphics():
 

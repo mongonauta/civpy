@@ -34,9 +34,8 @@ class MainMenu(Menu):
 
         ]
 
-        self.create_menu( items, selected_effect=zoom_in(),
-                          unselected_effect=zoom_out())
-
+        self.create_menu( items )
+        
     def on_quit( self ):
         pyglet.app.exit()
 
