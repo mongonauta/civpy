@@ -9,7 +9,8 @@
                             "grass",
                             "human",
                             "wood",
-                            "wilderness"],
+                            "wilderness",
+                            "shadow"],
 
   "resourceInfluenceRange": {"altitude"   : 0,
                             "relief"      : 0,
@@ -17,11 +18,24 @@
                             "rainfall"    : 0,
                             "temperature" : 0,
                             "water"       : 1,
-                            "forest"      : 1,
+                            "forest"      : 0,
                             "grass"       : 1,
                             "human"       : 1,
                             "wood"        : 0,
-                            "wilderness"  : 1},
+                            "wilderness"  : 1,
+                            "shadow"      : 0},
+
+  "resourceInfluenceMatrix": {"human": {"water" : 2.00,
+                                        "grass" : 0.25,
+                                        "forest":-1.00},
+
+                              "grass": {"openspace": 8.00,
+                                        "forest":   -1.00}},
+
+  "spreadThreshold"      : {"human": 5},
+
+  "resourceNotAllowedOn" : {"human": ["water"],
+                            "grass": ["water"]},
 
   "updateableResources"  : ["human",
                             "grass",
@@ -53,11 +67,11 @@
                            },
 
 
-  "humanSpreadThreshold" : 5,
+  "humanSpreadThreshold" : 3,
 
-  "vsize"                : 32,
+  "vsize"                : 64,
 
-  "hsize"                : 32,
+  "hsize"                : 64,
 
   "seedPopulation"       : 10
 }

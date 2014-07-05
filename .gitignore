@@ -54,3 +54,13 @@ resources/DSC_0696.png
 scribbles.txt
 
 test.py
+
+test2.py
+
+dist/*.*
+
+build/*.*
+
+menu_test
+
+hello_world.py
